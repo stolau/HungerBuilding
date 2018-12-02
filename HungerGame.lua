@@ -5,7 +5,7 @@
 
 gMult= 8
 t = 1
-goldAmount = 5
+goldAmount = 1000
 cursor_x = 1
 cursor_y = 1
 
@@ -22,6 +22,11 @@ cursor_y_menu = 10
 selectedId = 0
 
 cursorScale = 1
+
+cost = {}
+cost[7] = 10
+cost[9] = 11
+cost[11] = 11
 
 --Variables for hunger and tech progress-
 hungerLevel = 10
@@ -41,8 +46,13 @@ farmList = {}
 
 -- Building Objects list
 
+moneyh_count = 1
+school_count = 1
+farm_count = 1
+
 buildingObjects = {}
 bNumber = 1
+hNumber = 1
 buildId = 1
 
 -- Game States
@@ -80,30 +90,38 @@ function createMap()
     return whole_List
 end
 
-function Building:new(type, pos)
-  if type == 2 then spriteID = 9 end
-  if type == 1 then spriteID = 7 end
-  if type == 3 then spriteID = 11 end
+function Building:new(spriteID, pos)
   infoTable = {
-              type = type;
               pos = pos;
               spriteID = spriteID;
               size = 2
               }
+  if spriteID == 7 then
+    moneyh_count = moneyh_count + 1
+    goldAmount = goldAmount - cost[7]
+  end
+  if spriteID == 9 then
+    school_count = school_count + 1
+    goldAmount = goldAmount - cost[9]
+  end
+  if spriteID == 11 then
+    farm_count = farm_count + 1
+    goldAmount = goldAmount - cost[11]
+  end
   self._index = self
   return setmetatable(infoTable, self)
 end
 
-function Human:new(age, sex, name, skills, pos, spriteID, size)
+function Human:new(age, sex, skills, pos)
     infoTable = {
                 age = age;
                 sex = sex;
-                name = name;
+                name = "lolwut";
                 skills = skills;
                 pos = pos;
-                spriteID = spriteID;
+                spriteID = 0;
                 bDay = t;
-                size = size;
+                size = 1;
                 direction = {0,0}
                 }
     self._index = self
@@ -144,8 +162,8 @@ function chooseDirection()
     if v.direction[2] == -1 and v.sex == "male" then v.spriteID = 19 end
     if v.direction[1] == 1 and v.sex == "female" then v.spriteID = 36 end
     if v.direction[1] == 1 and v.sex == "male" then v.spriteID = 4 end
-    if v.direction[1] == -1 and v.sex == "female" then v.spriteID = 36 end
-    if v.direction[1] == -1 and v.sex == "male" then v.spriteID = 4 end
+    if v.direction[1] == -1 and v.sex == "female" then v.spriteID = 52 end
+    if v.direction[1] == -1 and v.sex == "male" then v.spriteID = 51 end
   end
 end
 
@@ -190,11 +208,6 @@ function updateAge()
   end
 end
 
---Places object to the ground
-function placeSelectedBuilding(buildingID)
-        spr(buildingID, cursor_x, cursor_y)
-end
-
 
 function cursor_buttons()
   if btn(0) and (cursor_y-8 > 0) then
@@ -214,17 +227,14 @@ function cursor_buttons()
     button_press = 1
   end
   if btn(a) then selectedId = 0 end
-
-  --[[if selectedId == 1 then
-    if btn(z) then
-            --bKiller = Building:new(1,{cursor_x, cursor_y})
-            --"B" .. bNumber = bKiller
-            --table.insert(buildingObjects, {"B" .. bNumber = bKiller})
-    buildingObjects["B" .. bNumber] = Building:new(1, {cursor_X, cursor_y})
-    updateMapList(selectedBuilding)
-    bNumber = bNumber + 1
+  if selectedId == 1 and btn(z) then
+    if goldAmount - cost[buildId] > 0 then
+      buildingList["B" .. bNumber] = Building:new(buildId, {cursor_x, cursor_y})
+      bNumber = bNumber + 1
+      selectedId = 0
+    else
     end
-  end --]]
+  end
 end
 
 function cursor_menu_buttons()
@@ -249,6 +259,7 @@ function cursor_menu_buttons()
     if cursor_y_menu == 80 then
         buildId = 11
     end
+    button_press = 1
   end
 end
 
@@ -256,7 +267,7 @@ sizeItem = 4
 itemItem = {9, 10, 25, 26}
 -- item gets values left top, right top, bottom left, bottom right
 function drawItemUnderCursor(size, item)
-    spr(9, cursor_x, cursor_y, 0, 1, 0, 0, 2, 2)
+    spr(buildId, cursor_x, cursor_y, 0, 1, 0, 0, 2, 2)
 end
 
 
@@ -278,7 +289,7 @@ function gold()
 end
 
 function hungerLevelManager(hungerCount)
-    hungerLevel = hungerLevel + hungerCount
+    hungerLevel = hungerLevel + (1/farm_count)*hungerCount
     if hungerLevel < 5 then
         hungerLevel_color = 6
     end
@@ -297,14 +308,25 @@ function techLevelManager(techCount)
     end
 end
 
+function addHuman()
+
+    genderList = {"male", "female"}
+    colors = {"Red", "Blue", "Green", "Gold"}
+    choiceG = math.random(1, 2)
+    choiceC = math.random(1, 4)
+    random_x_Pos = math.random(0, 23)
+    random_y_Pos = math.random(0, 15)
+
+    humanList["H" .. hNumber] = Human:new(1, genderList[choiceG], colors[choiceC], {(8*random_x_Pos + 1), (8*random_y_Pos + 1)})
+
+    hNumber = hNumber + 1
+
+end
+
 -- Test Objects --
 mapList = createMap()
-humanList["Anssi"] = Human:new(1, "male", "Anssi Uistola", "none", {(8*9)+1, (8*9)+1}, 3, 1)
-humanList["Topias"] = Human:new(1, "female", "Topias Syri", "everything", {(8*3)+1, (8*3)+1}, 35, 1)
-buildingList["A"] = Building:new(1, {(6*8)+1, (6*8)+1})
-buildingList["B"] = Building:new(2, {(10*8)+1,(6*8)+1})
-buildingList["C"] = Building:new(2, {(6*8)+1, (10*8)+1})
-buildingList["D"] = Building:new(3, {(10*8)+1, (10*8)+1})
+--humanList["Anssi"] = Human:new(1, "male", "Anssi Uistola", "none", {(8*9)+1, (8*9)+1}, 3, 1)
+--humanList["Topias"] = Human:new(1, "female", "Topias Syri", "everything", {(8*3)+1, (8*3)+1}, 35, 1)
 
 for i, v in pairs(buildingList) do
   updateMapList(v)
@@ -313,7 +335,7 @@ end
 
 function TIC()
     if inGame then
-      if not btn(0) and not btn(1) and not btn(2) and not btn(3) then
+      if not btn(0) and not btn(1) and not btn(2) and not btn(3) and not btn(z) and not btn(x) and not btn(a) then
         button_press = 0
       end
       if btn(x) then menu_screen = 1 end
@@ -377,10 +399,10 @@ function TIC()
        print(cursor_y_menu, 0,0, 1)
        --Draws Different Cursors
        drawMap()
-       drawCursor()
        if selectedId == 1 then
            drawItemUnderCursor()
        end
+       drawCursor()
        if menu_screen == 1 then drawMenuCursor() end
 
        techLevelManager(techSpeed *4  / 60)
@@ -391,20 +413,16 @@ function TIC()
        end
 
        if t%60 == 0 then
-         hungerLevelManager(-1)
+         hungerLevelManager(-(1/2))
        end
 
        if t%180 == 0 then
          gold()
        end
        updateAge()
+       if t%180 == 0 then addHuman() end
        if t%60 == 0 then chooseDirection() end
        if t%8 == 0 then moveHuman() end
-
-       --print(Anssi.name .. "  " .. Anssi.age, 10, 10)
-       print(humanList["Anssi"].name .. " ".. humanList["Anssi"].age, 10, 10)
-       print(humanList["Topias"].name .. " " .. humanList["Topias"].age, 10, 20)
-       print(mapList[7][7], 30,30)
        t = t+1
        if t%60 == 0 then
            timeCounter = timeCounter + 1
@@ -417,7 +435,7 @@ function TIC()
            inGame = true
        end
 
-       print("WELCOME TO CITY BUILDING SIMILUATOR", 25, 15)
+       print("WELCOME TO SITY BUILDING SIMILUATOR", 25, 15)
 
 
        spr(112, 5, 44, 0, 1, 0, 0, 2, 2)

@@ -25,9 +25,11 @@ cursorScale = 1
 
 --Variables for hunger and tech progress-
 hungerLevel = 10
-techLevel = 0
+techLevel = 1
 timeCounter = 0
 hungerLevel_color = 11 --Color green
+techSpeed = 2
+techProgress = 0
 
 -- Lists for tracking Objects --
 Human = {}
@@ -36,6 +38,12 @@ humanList = {}
 schoolList = {}
 bankList = {}
 farmList = {}
+
+-- Building Objects list
+
+buildingObjects = {}
+bNumber = 1
+buildId = 1
 
 
 up = 0
@@ -46,6 +54,11 @@ z = 4
 x = 5
 a = 6
 s = 7
+
+-- Game States
+
+inGame = false
+mainMenu = true
 
 
 
@@ -156,6 +169,18 @@ function cursor_buttons()
     cursor_x=cursor_x+8
     button_press = 1
   end
+  if btn(a) then selectedId = 0 end
+  
+    --[[if selectedId == 1 then
+    if btn(z) then
+            --bKiller = Building:new(1,{cursor_x, cursor_y})
+            --"B" .. bNumber = bKiller
+            --table.insert(buildingObjects, {"B" .. bNumber = bKiller})
+    buildingObjects["B" .. bNumber] = Building:new(1, {cursor_X, cursor_y})
+    updateMapList(selectedBuilding)
+    bNumber = bNumber + 1
+    end
+  end --]]
 end
 
 function cursor_menu_buttons()
@@ -169,16 +194,24 @@ function cursor_menu_buttons()
   end
   if btn(a) then menu_screen = 0 end
   if btn(z) then
-    menu_screen = 0
     selectedId = 1
+    menu_screen = 0
+    if cursor_y_menu == 10 then
+        buildId = 7
+    end
+    if cursor_y_menu == 45 then
+        buildId = 9
+    end
+    if cursor_y_menu == 80 then
+        buildId = 11
+    end
   end
 end
 
-sizeItem = 4
-itemItem = {9, 10, 25, 26}
+
 -- item gets values left top, right top, bottom left, bottom right 
-function drawItemUnderCursor(size, item)
-    spr(9, cursor_x, cursor_y, 0, 1, 0, 0, 2, 2)
+function drawItemUnderCursor()
+    spr(buildId, cursor_x, cursor_y, 0, 1, 0, 0, 2, 2)
 end
     
 
@@ -189,6 +222,7 @@ end
 
 function drawCursor()
   spr(1, cursor_x, cursor_y, 0, 1, 0, 0, 1, 1)
+  
 end
 
 function drawMenuCursor()
@@ -212,6 +246,15 @@ function hungerLevelManager(hungerCount)
 
 end
 
+function techLevelManager(techCount)
+    techProgress = techProgress + techCount
+    if techProgress >= 30 then
+        techProgress = 0
+        techLevel = techLevel + 1
+    end
+    
+end
+
 
 mapList = createMap()
 Anssi = Human:new(0, "male", "Anssi Uistola", "none", {(8*5)+1, (8*11)+1}, 3, 1)
@@ -227,7 +270,7 @@ updateMapList(SchoolA)
 function TIC()
 
 
-    
+    if inGame then
 		if not btn(0) and not btn(1) and not btn(2) and not btn(3) then
 			button_press = 0
 		end
@@ -238,11 +281,21 @@ function TIC()
 		map()
 		rect(0, play_area_limit_y, 240, 8, 2)
 		rect(play_area_limit_x, 0, 80, 136, 2)
-        if selectedId == 1 then
-            drawItemUnderCursor(sizeItem, itemItem)
-        end
         -- Prints screen for Building interface panel
+        
+        
+        if menu_screen == 0 then
+
+            spr(32, 204, 4, 0, 3, 0, 0, 1, 1)
+            spr(48, 204, 28, 0, 3, 0, 0, 1, 1)
+            spr(64, 204, 52, 0, 3, 0, 0, 1, 1)
+            spr(80, 204, 76, 0, 3, 0, 0, 1, 1)
+            -- Prints numbers alive, of each ability
+            print(4 .."x", 193, 13)
+
+        end
         if menu_screen == 1 then
+
             rect(200, 8, 32, 32, 4)
             rect(200, 43, 32, 32, 4)
             rect(200, 78, 32, 32, 4)
@@ -267,7 +320,7 @@ function TIC()
             end
         end
 		print("Score:", 0, 130)
-		print("Day:", 50, 130)
+		print("Tech:", 50, 130)
 		print("Gold: " .. goldAmount, 90, 130, 9)
         
         --Prints Hunger Level
@@ -276,13 +329,26 @@ function TIC()
         
         --Prints Tech level
         rect(200, 120, 32, 7, 1)
-        rect(201, 121, 30, 5, 8)
+        rect(201, 121, techProgress, 5, 8)
+        print(techLevel, 194, 121)
         
-        print(timeCounter, 0,0, 1)
-        --Draws
+        
+        
+        print(cursor_y_menu, 0,0, 1)
+        --Draws Different Cursors
         drawMap()
 		drawCursor()
-        drawMenuCursor()
+        if selectedId == 1 then
+            drawItemUnderCursor()
+        end
+        if menu_screen == 1 then drawMenuCursor() end
+        
+        techLevelManager(techSpeed *4  / 60)
+        if techLevel >= 3 then
+            techSpeed = 0
+            
+            print("GAME IS OVER HIT THE SHOWER", 40, 40)
+        end
         
         if t%60 == 0 then
             hungerLevelManager(-1)
@@ -292,19 +358,31 @@ function TIC()
 				gold()
                 updateAge()
 		end
-        --[[for i = 1, 16, 1
-        do
-            for z = 1, 24, 1
-            do
-                print(mapList[i][z], z* 4, i * 8)
-            end
-        end]]--
-        
         
         print(Anssi.name .. "  " .. Anssi.age, 10, 10)
 		t = t+1
         if t%60 == 0 then  
             timeCounter = timeCounter + 1
         end 
+    end
+    if mainMenu then
+        cls(5)
+        if btn(x) then
+            mainMenu = false
+            inGame = true
+        end
+        
+        print("WELCOME TO CITY BUILDING SIMILUATOR", 25, 15)
+        
+        
+        spr(112, 5, 44, 0, 1, 0, 0, 2, 2)
+        spr(144, 20, 44, 0, 1, 0, 0, 2, 2)
+        spr(112, 5, 64, 0, 1, 0, 0, 2, 2)
+        spr(144, 37, 64, 0, 1, 0, 0, 2, 2)
+        spr(176, 21, 64, 0, 1, 0, 0, 2, 2)
+        print("PLAY", 10, 50)
+        print("OPTIONS", 10, 70)
+        print("QUIT", 10, 90, 6)
+    end
 
 end

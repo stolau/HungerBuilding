@@ -75,21 +75,15 @@ s = 7
 --Create Map list for units to checkout squares
 function createMap()
     map_List = {}
-    map_Y = 1
-    map_X = 1
-    repeat
-        table.insert(map_List, 0)
-        map_Y = map_Y + 1
-    until map_Y > 16
-    whole_List = {}
-    repeat
-        table.insert(whole_List, map_List)
-        map_X = map_X + 1
-    until map_X > 24
-
-    return whole_List
+    for i=0, 23, 1 do
+      for k=0, 15, 1 do
+        map_List[i .. "," .. k] = 1
+      end
+    end
+    return map_List
 end
 
+-- Building constructor --
 function Building:new(spriteID, pos)
   infoTable = {
               pos = pos;
@@ -112,69 +106,99 @@ function Building:new(spriteID, pos)
   return setmetatable(infoTable, self)
 end
 
-function Human:new(age, sex, skills, pos)
+-- Human constructor --
+function Human:new(age, sex, skills, posit)
+    mapList[fromPtoB(posit[1]) .. "," .. fromPtoB(posit[2])] = nil
     infoTable = {
                 age = age;
                 sex = sex;
-                name = "lolwut";
                 skills = skills;
-                pos = pos;
-                spriteID = 0;
+                pos = posit;
+                spriteID = 16;
                 bDay = t;
                 size = 1;
-                direction = {0,0}
+                direction = {0,0};
+                loc1 = fromPtoB(posit[1]) .. "," .. fromPtoB(posit[2]);
+                loc2 = fromPtoB(posit[1]) .. "," .. fromPtoB(posit[2])
                 }
     self._index = self
     return setmetatable(infoTable, self)
 end
 
-function getlegalMoves(obj)
-    moves = {}
-    if ((obj.pos[1]-1)//8)-2 > 0 then
-      if mapList[((obj.pos[1]-1)//8)-1][((obj.pos[2]-1)//8)] == 0 then
-        table.insert(moves, {-1, 0})
-      end
-    end
-    if ((obj.pos[1]-1)//8)+2 < play_area_limit_x then
-      if mapList[((obj.pos[1]-1)//8)+1][((obj.pos[2]-1)//8)] == 0 then
-        table.insert(moves, {1,0})
-      end
-    end
-    if ((obj.pos[2]-1)//8)-2 > 0 then
-      if mapList[((obj.pos[1]-1)//8)][((obj.pos[2]-1)//8)-1] == 0 then
-        table.insert(moves, {0, -1})
-      end
-    end
-    if ((obj.pos[2]-1)//8)+2 < play_area_limit_y then
-      if mapList[((obj.pos[1]-1)//8)][((obj.pos[2]-1)//8)+1] == 0 then
-        table.insert(moves, {0, 1})
-      end
-    end
-    return moves[math.random(#moves)]
+-- function to go from mapList coordinates to Pixel coordinates --
+function fromBtoP(value)
+  return ((value*8) + 1)
 end
 
-function chooseDirection()
-  for i, v in pairs(humanList) do
-    v.direction = getlegalMoves(v)
-    if v.direction[2] == 1 and v.sex == "female" then v.spriteID = 35 end
-    if v.direction[2] == 1 and v.sex == "male" then v.spriteID = 3 end
-    if v.direction[2] == -1 and v.sex == "female" then v.spriteID = 20 end
-    if v.direction[2] == -1 and v.sex == "male" then v.spriteID = 19 end
-    if v.direction[1] == 1 and v.sex == "female" then v.spriteID = 36 end
-    if v.direction[1] == 1 and v.sex == "male" then v.spriteID = 4 end
-    if v.direction[1] == -1 and v.sex == "female" then v.spriteID = 52 end
-    if v.direction[1] == -1 and v.sex == "male" then v.spriteID = 51 end
+
+-- function to go from Pixel coordinates to mapList coordinates --
+function fromPtoB(value)
+  val = (value-1)/8
+  if (value-1)%8 == 0 then
+    return math.floor(val)
+  else
+    return 10000
   end
 end
+
+
+-- Checks the legal directions for a human from mapList --
+function getlegalMoves(obj)
+    moves = {}
+    if mapList[fromPtoB(obj.pos[1]) - 1 .. "," .. fromPtoB(obj.pos[2])] == 1 then
+      table.insert(moves, {-1, 0})
+    end
+    if mapList[fromPtoB(obj.pos[1]) + 1 .. "," .. fromPtoB(obj.pos[2])] == 1 then
+      table.insert(moves, {1, 0})
+    end
+    if mapList[fromPtoB(obj.pos[1]) .. "," .. fromPtoB(obj.pos[2]) - 1] == 1 then
+      table.insert(moves, {0, -1})
+    end
+    if mapList[fromPtoB(obj.pos[1]) .. "," .. fromPtoB(obj.pos[2]) + 1] == 1 then
+      table.insert(moves, {0, 1})
+    end
+    if #moves == 0 then
+      return 0
+    else
+      return moves[math.random(#moves)]
+    end
+end
+
+-- Chooses the direction a human will move --
+function chooseDirection(obj)
+    dir = getlegalMoves(obj)
+    if dir == 0 then
+      obj.direction = {0,0}
+    else
+      obj.direction = dir
+
+      -- Point to correct sprites for directional movement --
+      if obj.direction[2] == 1 and obj.sex == "female" then obj.spriteID = 35 end
+      if obj.direction[2] == 1 and obj.sex == "male" then obj.spriteID = 3 end
+      if obj.direction[2] == -1 and obj.sex == "female" then obj.spriteID = 20 end
+      if obj.direction[2] == -1 and obj.sex == "male" then obj.spriteID = 19 end
+      if obj.direction[1] == 1 and obj.sex == "female" then obj.spriteID = 36 end
+      if obj.direction[1] == 1 and obj.sex == "male" then obj.spriteID = 4 end
+      if obj.direction[1] == -1 and obj.sex == "female" then obj.spriteID = 52 end
+      if obj.direction[1] == -1 and obj.sex == "male" then obj.spriteID = 51 end
+      obj.loc2 = fromPtoB(obj.pos[1]) + obj.direction[1] .. "," .. fromPtoB(obj.pos[2]) + obj.direction[2]
+      mapList[obj.loc2] = nil
+    end
+end
+
+-- Calculates movement for Humans, and moves the sprite locations. Moves one tile at a time--
 
 function moveHuman()
   for i,v in pairs(humanList) do
-    if ((v.pos[1] - 2) > 0) and (v.pos[1] + 2) < play_area_limit_x and (v.pos[2] - 2) > 0 and (v.pos[2] + 2 < play_area_limit_y) then
-      if mapList[(v.pos[1] + v.direction[1])//8][(v.pos[2] + v.direction[2])//8] == 0 then
-        v.pos = {v.pos[1] + v.direction[1], v.pos[2] + v.direction[2]}
-      end
+    if (fromPtoB(v.pos[1]) .. "," .. fromPtoB(v.pos[2])) == v.loc2 then
+      mapList[v.loc1] = 1
+      v.loc1 = v.loc2
+      chooseDirection(v)
+    else if ((v.pos[1] + v.direction[1]) > 0) and (v.pos[1] + 8*v.direction[1]) < play_area_limit_x and (v.pos[2] + v.direction[2]) > 0 and (v.pos[2] + 8*v.direction[2] < play_area_limit_y) then
+      v.pos = {v.pos[1] + v.direction[1], v.pos[2] + v.direction[2]}
     end
   end
+end
 end
 
 -- Test to draw the contents of mapList on correct poss --
@@ -188,15 +212,13 @@ function drawMap()
   end
 end
 
+-- Updates the maplist to block moving on buildings --
+
 function updateMapList(obj)
-    if obj.size == 2 then
-      mapList[((obj.pos[1]-1)//8)+1][((obj.pos[2]-1)//8)+1] = 1
-      mapList[((obj.pos[1]-1)//8)+2][((obj.pos[2]-1)//8)+1] = 1
-      mapList[((obj.pos[1]-1)//8)+2][((obj.pos[2]-1)//8)+2] = 1
-      mapList[((obj.pos[1]-1)//8)+1][((obj.pos[2]-1)//8)+2] = 1
-    else
-      mapList[(((obj.pos[1]-1)//8)+1)][(((obj.pos[2]-1)//8)+1)] = 2
-    end
+    mapList[fromPtoB(obj.pos[1])+1 .. "," .. fromPtoB(obj.pos[2])] = 2
+    mapList[fromPtoB(obj.pos[1])+1 .. "," .. fromPtoB(obj.pos[2])+1] = 2
+    mapList[fromPtoB(obj.pos[1]) .. "," .. fromPtoB(obj.pos[2])+1] = 2
+    mapList[fromPtoB(obj.pos[1]) .. "," .. fromPtoB(obj.pos[2])] = 2
 end
 
 
@@ -230,6 +252,7 @@ function cursor_buttons()
   if selectedId == 1 and btn(z) then
     if goldAmount - cost[buildId] > 0 then
       buildingList["B" .. bNumber] = Building:new(buildId, {cursor_x, cursor_y})
+      updateMapList(buildingList["B" .. bNumber])
       bNumber = bNumber + 1
       selectedId = 0
     else
@@ -275,7 +298,6 @@ function drawAnimatedCursor()
   spr(1+t%60//30, cursor_x, cursor_y, 0, 1, 0, 0, 1, 1)
 end
 
-
 function drawCursor()
   spr(1, cursor_x, cursor_y, 0, 1, 0, 0, 1, 1)
 end
@@ -314,10 +336,11 @@ function addHuman()
     colors = {"Red", "Blue", "Green", "Gold"}
     choiceG = math.random(1, 2)
     choiceC = math.random(1, 4)
-    random_x_Pos = math.random(0, 23)
-    random_y_Pos = math.random(0, 15)
-
-    humanList["H" .. hNumber] = Human:new(1, genderList[choiceG], colors[choiceC], {(8*random_x_Pos + 1), (8*random_y_Pos + 1)})
+    repeat
+      random_x_Pos = math.random(0,23)
+      random_y_Pos = math.random(0,15)
+    until mapList[random_x_Pos .. "," .. random_y_Pos] == 1
+    humanList["H" .. hNumber] = Human:new(1, genderList[choiceG], colors[choiceC], {fromBtoP(random_x_Pos), fromBtoP(random_y_Pos)})
 
     hNumber = hNumber + 1
 
@@ -325,23 +348,15 @@ end
 
 -- Test Objects --
 mapList = createMap()
---humanList["Anssi"] = Human:new(1, "male", "Anssi Uistola", "none", {(8*9)+1, (8*9)+1}, 3, 1)
---humanList["Topias"] = Human:new(1, "female", "Topias Syri", "everything", {(8*3)+1, (8*3)+1}, 35, 1)
-
-for i, v in pairs(buildingList) do
-  updateMapList(v)
-end
-
 
 function TIC()
     if inGame then
       if not btn(0) and not btn(1) and not btn(2) and not btn(3) and not btn(z) and not btn(x) and not btn(a) then
         button_press = 0
       end
-      if btn(x) then menu_screen = 1 end
+      if btn(x) and button_press == 0 then menu_screen = 1 end
       if button_press == 0 and menu_screen == 0 then cursor_buttons() end
       cls(5)
-       --
        map()
        rect(0, play_area_limit_y, 240, 8, 2)
        rect(play_area_limit_x, 0, 80, 136, 2)
@@ -420,9 +435,8 @@ function TIC()
          gold()
        end
        updateAge()
-       if t%180 == 0 then addHuman() end
-       if t%60 == 0 then chooseDirection() end
-       if t%8 == 0 then moveHuman() end
+       if t%30 == 0 then addHuman() end
+       if t%2 == 0 then moveHuman() end
        t = t+1
        if t%60 == 0 then
            timeCounter = timeCounter + 1
@@ -433,6 +447,7 @@ function TIC()
        if btn(x) then
            mainMenu = false
            inGame = true
+           button_press = 1
        end
 
        print("WELCOME TO SITY BUILDING SIMILUATOR", 25, 15)

@@ -396,11 +396,12 @@ function killHuman(target)
 end
 
 function techLevels()
+  tech_count = {0,0,0,0}
   for i, v in pairs(humanList) do
-    if v.skill == "Red" then tech_count[1] = tech_count[1]+1 end
-    if v.skill == "Blue" then tech_count[2] = tech_count[2]+1 end
-    if v.skill == "Green" then tech_count[3] = tech_count[3]+1 end
-    if v.skill == "Gold" then tech_count[4] = tech_count[4]+1 end
+    if v.skills == "Red" then tech_count[1] = tech_count[1]+1 end
+    if v.skills == "Blue" then tech_count[2] = tech_count[2]+1 end
+    if v.skills == "Green" then tech_count[3] = tech_count[3]+1 end
+    if v.skills == "Gold" then tech_count[4] = tech_count[4]+1 end
   end
 end
 

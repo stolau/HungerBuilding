@@ -9,6 +9,15 @@ goldAmount = 90
 cursor_x = 1
 cursor_y = 1
 
+--menu variables
+
+mainMenuColor = 14
+o = 0
+
+main_menu_cursor_x = 37
+main_menu_cursor_y = 48
+
+-- Map variables
 play_area_limit_x = 193
 play_area_limit_y = 129
 
@@ -31,6 +40,8 @@ cost = {}
 cost[7] = 30
 cost[9] = 30
 cost[11] = 30
+
+humanHungerValue = 1
 
 tech_count = {0,0,0,0}
 --Variables for hunger and tech progress-
@@ -292,6 +303,13 @@ function cursor_buttons()
       bNumber = bNumber + 1
       selectedId = 0
     else
+      if goldAmount < cost[buildId] then
+        notEnoughGold = 1
+        notEnough_t = t
+      else
+        invalidPosition = 1
+        invalid_t = t
+      end
     end
   end
 end
@@ -336,8 +354,26 @@ function human_cursor_buttons()
     end
 end
 
-sizeItem = 4
-itemItem = {9, 10, 25, 26}
+function cursor_main_menu_buttons()
+
+  if btn(up) and (main_menu_cursor_y> 48) then
+      main_menu_cursor_y = main_menu_cursor_y - 16
+      button_press = 1
+    end
+    if btn(down) and (main_menu_cursor_y < 60) then
+      main_menu_cursor_y=main_menu_cursor_y + 16
+      button_press = 1
+    end
+    if btn(z) and (main_menu_cursor_y == 48) then
+      inGame = true
+      mainMenu = false
+    end
+    if btn(z) and (main_menu_cursor_y == 64) then
+      exit()
+      --inGame = true
+    end
+end
+
 -- item gets values left top, right top, bottom left, bottom right
 function drawItemUnderCursor(size, item)
     spr(buildId, cursor_x, cursor_y, 0, 1, 0, 0, 2, 2)
@@ -356,24 +392,41 @@ function drawMenuCursor()
   spr(1, cursor_x_menu, cursor_y_menu, 0, 4, 0, 0, 1, 1)
 end
 
+function draw_main_menu_Cursor()
+  spr(17, main_menu_cursor_x, main_menu_cursor_y, 0, 1, 0, 0, 1, 1)
+end
+
 function gold()
 		goldAmount = goldAmount + 1 + (moneyh_count)/5
 end
 
 function hungerLevelManager(hungerCount)
-    hungerLevel = hungerLevel + (1*hungerCount - 0.25*human_count + 0.25*farm_count)/5
+    hungerLevel = hungerLevel + (8*hungerCount - 0.5*human_count + 0.25*farm_count)/5
+    alive_humans = 0
+    for i, v in pairs(humanList) do
+      if v.state == 1 then alive_humans = alive_humans + 1 end
+    end
     if hungerLevel < 5 then
         hungerLevel_color = 6
+    end
+    if hungerLevel >= 10 then
+      hungerLevel = 10
     end
     if hungerLevel >= 5 then
         hungerLevel_color = 11
     end
-    -- If hungerLevel = 0 --> 3 random citizens will starve to death
-    -- No bonus food from them
+    if hungerLevel <= 0 then
+      hungerLevel = 0
+      if alive_humans > 3 then
+        killRandomHumans(3)
+      else
+        gameOver = 1
+      end
+    end
 end
 
 function techLevelManager(techCount)
-    techProgress = techProgress + techCount + 0.25*school_count
+    techProgress = techProgress + techCount + 2*school_count
     if techProgress >= 30*techLevel then
         techProgress = 0
         techLevel = techLevel + 1
@@ -393,15 +446,26 @@ function killHuman(target)
   mapList[target.loc2] = 1
   target.state = 0
   human_count = human_count - 1
+  hungerLevel = hungerLevel + humanHungerValue
+end
+
+function killRandomHumans(amount)
+  hitList = {}
+  for i, v in pairs(humanList) do
+    if v.state == 1 then table.insert(hitList, v) end
+  end
+  for i=1, amount, 1 do
+    killHuman(hitList[math.random(#hitList)])
+  end
 end
 
 function techLevels()
   tech_count = {0,0,0,0}
   for i, v in pairs(humanList) do
-    if v.skills == "Red" then tech_count[1] = tech_count[1]+1 end
-    if v.skills == "Blue" then tech_count[2] = tech_count[2]+1 end
-    if v.skills == "Green" then tech_count[3] = tech_count[3]+1 end
-    if v.skills == "Gold" then tech_count[4] = tech_count[4]+1 end
+    if v.skills == "Red" and v.state == 1 then tech_count[1] = tech_count[1]+1 end
+    if v.skills == "Blue" and v.state == 1 then tech_count[2] = tech_count[2]+1 end
+    if v.skills == "Green" and v.state == 1 then tech_count[3] = tech_count[3]+1 end
+    if v.skills == "Gold" and v.state == 1 then tech_count[4] = tech_count[4]+1 end
   end
 end
 
@@ -482,24 +546,40 @@ function TIC()
                cursor_menu_buttons()
            end
        end
+       drawMap()
+       if selectedId == 1 then
+           drawItemUnderCursor()
+       end
+       drawCursor()
        if humanButton == 1 then
             skillS = selectedHuman.skills
             ageS = selectedHuman.age
+            humanGender = selectedHuman.sex
+
+            if humanGender == "female" then
+                spr(41, 200, 5, 0, 2, 0, 0, 2, 2)
+            elseif humanGender == "male" then
+                spr(43, 200, 5, 0, 2, 0, 0, 2, 2)
+            end
+
             print("Age: " .. ageS, 200, 8+35)
             print("Skill: ", 200, 16+35)
             print(skillS, 200, 24+35)
             -- Draws skills in
-            --[[for h=1, skillOwned, 1 do
-                spr(skillSpritePos, 200, 8+(h*35), 0, 2, 0, 0, 2, 2)
-            end --]]
+            if skillS == "Red" then
+                spr(32, 207, 65, 0, 2, 0, 0, 1, 1)
+            elseif skillS == "Blue" then
+                spr(48, 207, 65, 0, 2, 0, 0, 1, 1)
+            elseif skillS == "Green" then
+                spr(64, 207, 65, 0, 2, 0, 0, 1, 1)
+            elseif skillS == "Gold" then
+                spr(80, 207, 65, 0, 2, 0, 0, 1, 1)
+            end
 
-            --[[if t%90 == 0 then
-                sacId = 37
-            elseif t%45 == 0 then
-                sacId = 39 --]]
-            --spr(sacId, 80, 50, 0, 2, 0, 0, 2, 2)
-            --end
-            --print("PRESS X TO SACRIFICE", 10, 22)
+            print("YOU ARE ABOUT TO KILL PERSON", 21, 20)
+            print("PRESS X TO SACRIFICE", 42, 35)
+            spr(sacId, 80, 50, 0, 2, 0, 0, 2, 2)
+            print("PRESS A TO CONSIDER CHOICES", 24, 90)
             human_cursor_buttons()
        end
 
@@ -516,11 +596,6 @@ function TIC()
        print(techLevel, 194, 121)
        print(cursor_y_menu, 0,0, 1)
        --Draws Different Cursors
-       drawMap()
-       if selectedId == 1 then
-           drawItemUnderCursor()
-       end
-       drawCursor()
        if menu_screen == 1 then drawMenuCursor() end
 
        if t%600 == 0 then techLevelManager(2) end
@@ -532,6 +607,16 @@ function TIC()
        if t%60 == 0 then hungerLevelManager(-1) end
 
        if t%60 == 0 then gold() end
+      -- Error Message for Invalid Position --
+       if invalidPosition == 1 then
+         print("invalid position", cursor_x, cursor_y)
+         if invalid_t%60 == 0 then invalidPosition = 0 end
+       end
+       -- Error message for gold --
+       if notEnoughGold == 1 then
+         print("notEnoughGold", cursor_x, cursor_y)
+         if notEnough_t%60 == 0 then notEnoughGold = 0 end
+       end
        updateAge()
        if t%300 == 0 then addHuman() end
        if t%12 == 0 then moveHuman() end
@@ -541,23 +626,44 @@ function TIC()
        end
    end
    if mainMenu then
-       cls(5)
-       if btn(x) then
-           mainMenu = false
-           inGame = true
-           button_press = 1
+           cls(4)
+           if btn(x) then
+               mainMenu = false
+               inGame = true
+           end
+
+           if o%360 == 0 then
+               if mainMenuColor == 14 then
+                   mainMenuColor = 6
+                   o = 0 + 340
+               elseif mainMenuColor == 6 then
+                   mainMenuColor = 14
+               end
+           end
+           --print(o, 0,0, 0)
+           print("WELCOME TO CITY BUILDING SIMILUATOR", 25, 15,mainMenuColor)
+
+
+           spr(112, 5, 44, 0, 1, 0, 0, 2, 2)
+           spr(144, 20, 44, 0, 1, 0, 0, 2, 2)
+           spr(112, 5, 60, 0, 1, 0, 0, 2, 2)
+           spr(144, 20, 60, 0, 1, 0, 0, 2, 2)
+           --spr(112, 5, 64, 0, 1, 0, 0, 2, 2)
+           --spr(144, 37, 64, 0, 1, 0, 0, 2, 2)
+           --spr(176, 21, 64, 0, 1, 0, 0, 2, 2)
+           --spr(17, 40, 47, 0, 1, 0, 0, 1, 1) -- Main Menu Indicator
+           print("PLAY", 10, 50)
+           print("QUIT", 10, 66, 6)
+           draw_main_menu_Cursor()
+           cursor_main_menu_buttons()
+
+               for d = 1, 50, 1 do
+                   if o%math.random(10, 20) == 0 then
+                       initial_x = math.random(0,240)
+                       rect(initial_x, 140-d, math.random(1,2), math.random(1,2), 14)
+                   end
+               end
+
+           o = o + 1
        end
-
-       print("WELCOME TO SITY BUILDING SIMILUATOR", 25, 15)
-
-
-       spr(112, 5, 44, 0, 1, 0, 0, 2, 2)
-       spr(144, 20, 44, 0, 1, 0, 0, 2, 2)
-       spr(112, 5, 64, 0, 1, 0, 0, 2, 2)
-       spr(144, 37, 64, 0, 1, 0, 0, 2, 2)
-       spr(176, 21, 64, 0, 1, 0, 0, 2, 2)
-       print("PLAY", 10, 50)
-       print("OPTIONS", 10, 70)
-       print("QUIT", 10, 90, 6)
-   end
 end

@@ -1,9 +1,9 @@
 # HungerBuilding
-# Developed by Anssi Uistola and Topias Syri as part of Ludum Dare 43 event.
-# More information about Ludum Dare can be found at https://ldjam.com/
-# Game can be played easily at https://tic.computer/play?cart=687
+### Developed by Anssi Uistola and Topias Syri as part of Ludum Dare 43 event.
+### More information about Ludum Dare can be found at https://ldjam.com/
+### Game can be played easily at https://tic.computer/play?cart=687
 
-# How To Play
+### How To Play
 
 City Building Similuator
 
@@ -23,7 +23,7 @@ You can build green houses to prevent that. Or... you can sacrifice your citizen
 
 Which citizen is most valuable to you, make your choice.
 
-# Bugs found
+### Bugs found
 
 Game will crash after the game.
 When too many people on field game board gets confused and new citizens will spawn as blue boxes
